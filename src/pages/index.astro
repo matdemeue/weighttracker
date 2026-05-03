@@ -99,27 +99,27 @@ const jsonData = JSON.stringify(measurements);
           <h3>Lichaamsgewicht <span class="unit">kg</span></h3>
           <canvas id="chartWeight"></canvas>
         </div>
-        <div class="chart-card">
+        <div class="chart-card chart-wide">
           <h3>Vet <span class="unit">%</span></h3>
           <canvas id="chartFatPct"></canvas>
         </div>
-        <div class="chart-card">
+        <div class="chart-card chart-wide">
           <h3>Vet <span class="unit">kg</span></h3>
           <canvas id="chartFatKg"></canvas>
         </div>
-        <div class="chart-card">
+        <div class="chart-card chart-wide">
           <h3>VVM <span class="unit">kg</span></h3>
           <canvas id="chartVvm"></canvas>
         </div>
-        <div class="chart-card">
+        <div class="chart-card chart-wide">
           <h3>Vocht <span class="unit">%</span></h3>
           <canvas id="chartWaterPct"></canvas>
         </div>
-        <div class="chart-card">
+        <div class="chart-card chart-wide">
           <h3>Vocht <span class="unit">kg</span></h3>
           <canvas id="chartWaterKg"></canvas>
         </div>
-        <div class="chart-card">
+        <div class="chart-card chart-wide">
           <h3>Visceraal vet</h3>
           <canvas id="chartVisceral"></canvas>
         </div>
@@ -592,8 +592,12 @@ const jsonData = JSON.stringify(measurements);
     tbody.querySelectorAll<HTMLButtonElement>('.delete-btn').forEach(btn => {
       btn.addEventListener('click', async () => {
         if (!confirm('Meting verwijderen?')) return;
-        await fetch(`/api/measurements/${btn.dataset.id}`, { method: 'DELETE' });
-        window.location.reload();
+        const res = await fetch(`/api/measurements/${btn.dataset.id}`, { method: 'POST' });
+        if (res.ok) {
+          window.location.reload();
+        } else {
+          alert(`Verwijderen mislukt (${res.status})`);
+        }
       });
     });
   }
