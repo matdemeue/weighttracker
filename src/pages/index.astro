@@ -440,7 +440,7 @@ const jsonData = JSON.stringify(measurements);
       { label: 'Huidig gewicht', value: (fmt(last.weight)      ?? '—') + ' kg', delta: d(last.weight,       first?.weight       ?? null) },
       { label: 'Vet (kg)',       value: (fmt(last.fat_kg)      ?? '—') + ' kg', delta: d(last.fat_kg,       first?.fat_kg       ?? null) },
       { label: 'Vet (%)',        value: (fmt(last.fat_pct)     ?? '—') + ' %',  delta: d(last.fat_pct,      first?.fat_pct      ?? null) },
-      { label: 'VVM',            value: (fmt(last.vvm)         ?? '—') + ' kg', delta: d(last.vvm,          first?.vvm          ?? null) },
+      { label: 'VVM',            value: (fmt(last.vvm)         ?? '—') + ' kg', delta: null },
       { label: 'Vocht (kg)',     value: (fmt(last.water_kg)    ?? '—') + ' kg', delta: null },
       { label: 'Visceraal vet',  value:  fmt(last.visceral_fat, 0) ?? '—',      delta: d(last.visceral_fat, first?.visceral_fat ?? null) },
     ];
