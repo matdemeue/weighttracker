@@ -21,8 +21,7 @@ const measurements = db
 const jsonData = JSON.stringify(measurements);
 ---
 
-<Layout title="Gewichtstracker">
-  <!-- server-rendered data for client scripts -->
+<Layout title="Metingen — Gewichtstracker">
   <script type="application/json" id="__data" set:html={jsonData}></script>
 
   <div class="app">
@@ -87,43 +86,26 @@ const jsonData = JSON.stringify(measurements);
       <button id="emptyAddBtn" class="btn-primary">+ Eerste meting toevoegen</button>
     </div>
 
-    <!-- Dashboard -->
+    <!-- Table -->
     <div id="dashboard" class={measurements.length > 0 ? 'dashboard' : 'dashboard hidden'}>
-      <!-- Stats bar -->
-      <section id="statsBar" class="stats-bar"></section>
-
-      <!-- Charts -->
-      <section class="charts-grid">
-        <div class="chart-card chart-wide">
-          <h3>Lichaamsgewicht <span class="unit">kg</span></h3>
-          <canvas id="chartWeight"></canvas>
-        </div>
-        <div class="chart-card chart-wide">
-          <h3>Vet <span class="unit">%</span></h3>
-          <canvas id="chartFatPct"></canvas>
-        </div>
-        <div class="chart-card chart-wide">
-          <h3>Vet <span class="unit">kg</span></h3>
-          <canvas id="chartFatKg"></canvas>
-        </div>
-        <div class="chart-card chart-wide">
-          <h3>VVM <span class="unit">kg</span></h3>
-          <canvas id="chartVvm"></canvas>
-        </div>
-        <div class="chart-card chart-wide">
-          <h3>Vocht <span class="unit">%</span></h3>
-          <canvas id="chartWaterPct"></canvas>
-        </div>
-        <div class="chart-card chart-wide">
-          <h3>Vocht <span class="unit">kg</span></h3>
-          <canvas id="chartWaterKg"></canvas>
-        </div>
-        <div class="chart-card chart-wide">
-          <h3>Visceraal vet</h3>
-          <canvas id="chartVisceral"></canvas>
-        </div>
-      </section>
-
+      <div class="table-wrap">
+        <table id="dataTable">
+          <thead>
+            <tr>
+              <th>Datum</th>
+              <th>Gewicht (kg)</th>
+              <th>Vet (%)</th>
+              <th>Vet (kg)</th>
+              <th>VVM (kg)</th>
+              <th>Vocht (kg)</th>
+              <th>Vocht (%)</th>
+              <th>Visceraal vet</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+      </div>
     </div>
   </div>
 </Layout>
@@ -171,7 +153,6 @@ const jsonData = JSON.stringify(measurements);
   }
   .btn-ghost:hover { color: var(--text); border-color: var(--muted); }
 
-  /* Form */
   .form-panel { margin-bottom: 28px; }
   .form-panel.hidden { display: none; }
 
@@ -216,7 +197,6 @@ const jsonData = JSON.stringify(measurements);
 
   .form-actions { display: flex; gap: 10px; justify-content: flex-end; }
 
-  /* Empty state */
   .empty-state {
     text-align: center;
     padding: 80px 20px;
@@ -226,99 +206,95 @@ const jsonData = JSON.stringify(measurements);
   .empty-state h2 { font-size: 1.3rem; margin-bottom: 6px; }
   .empty-state p { color: var(--muted); margin-bottom: 22px; }
 
-  /* Dashboard */
   .dashboard.hidden { display: none; }
 
-  /* Stats bar */
-  .stats-bar {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(155px, 1fr));
-    gap: 12px;
-    margin-bottom: 24px;
-  }
-
-  /* Charts */
-  .charts-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 16px;
-    margin-bottom: 28px;
-  }
-
-  .chart-card {
-    background: var(--surface);
+  .table-wrap {
+    overflow-x: auto;
     border: 1px solid var(--border);
     border-radius: var(--radius);
-    padding: 18px 20px;
+    background: var(--surface);
     box-shadow: 0 1px 3px rgba(0,0,0,.05);
   }
 
-  .chart-wide { grid-column: 1 / -1; }
-
-  .chart-card h3 {
-    font-size: .78rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: .05em;
-    color: var(--muted);
-    margin-bottom: 14px;
-  }
-  .unit { font-weight: 400; text-transform: none; letter-spacing: 0; }
-
-  canvas { max-height: 210px; }
-
   @media (max-width: 640px) {
-    .charts-grid { grid-template-columns: 1fr; }
-    .chart-wide { grid-column: 1; }
     .form-grid { grid-template-columns: 1fr 1fr; }
   }
 </style>
 
 <style is:global>
-  .stat-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
+  /* Table — global because tbody rows are injected via JS innerHTML */
+  #dataTable {
+    width: 100%;
+    border-collapse: collapse;
+    white-space: nowrap;
+  }
+
+  #dataTable thead tr {
+    background: var(--surface2);
+    border-bottom: 2px solid var(--border);
+  }
+
+  #dataTable th,
+  #dataTable td {
     padding: 14px 18px;
-    box-shadow: 0 1px 3px rgba(0,0,0,.05);
+    text-align: right;
   }
-  .stat-label {
-    font-size: .72rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: .05em;
-    color: var(--muted);
-    margin-bottom: 3px;
-  }
-  .stat-value {
-    font-size: 1.25rem;
+
+  #dataTable th {
     font-weight: 700;
+    font-size: .7rem;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    color: var(--muted);
+  }
+
+  #dataTable th:first-child,
+  #dataTable td:first-child { text-align: left; }
+
+  #dataTable th:last-child,
+  #dataTable td:last-child {
+    width: 48px;
+    padding: 0 12px;
+    text-align: center;
+  }
+
+  #dataTable td {
+    font-size: .875rem;
+    font-variant-numeric: tabular-nums;
     color: var(--text);
-    display: flex;
-    align-items: baseline;
-    gap: 7px;
   }
-  .delta {
-    font-size: .75rem;
-    font-weight: 600;
-    padding: 1px 7px;
-    border-radius: 20px;
+
+  #dataTable td:first-child { font-weight: 600; }
+
+  #dataTable tbody tr { border-bottom: 1px solid var(--border); transition: background .12s; }
+  #dataTable tbody tr:last-child { border-bottom: none; }
+  #dataTable tbody tr:nth-child(even) { background: #fafbfc; }
+  #dataTable tbody tr:hover { background: #eef2ff; }
+
+  #dataTable td.null-val { color: #c8d0db; font-size: .8rem; }
+
+  .delete-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    background: none;
+    border: 1px solid transparent;
+    cursor: pointer;
+    color: #c8d0db;
+    font-size: .85rem;
+    border-radius: 6px;
+    transition: color .15s, background .15s, border-color .15s;
   }
-  .delta.neg { background: rgba(22,163,74,.12); color: #16a34a; }
-  .delta.pos { background: rgba(239,68,68,.1);  color: #ef4444; }
-  .delta.neutral { background: #f1f5f9; color: var(--muted); }
+  .delete-btn:hover {
+    color: var(--accent2);
+    background: rgba(239,68,68,.07);
+    border-color: rgba(239,68,68,.2);
+  }
 </style>
 
 <script>
-  import {
-    Chart,
-    LineController, LineElement, PointElement,
-    LinearScale, CategoryScale,
-    Filler, Tooltip,
-  } from 'chart.js';
-
-  Chart.register(LineController, LineElement, PointElement, LinearScale, CategoryScale, Filler, Tooltip);
-
   interface Row {
     id: string;
     date: string;
@@ -335,18 +311,6 @@ const jsonData = JSON.stringify(measurements);
     document.getElementById('__data')!.textContent!
   );
 
-  const chartInstances: Record<string, Chart> = {};
-
-  const CHART_DEFS = [
-    { id: 'chartWeight',   key: 'weight'      as keyof Row, color: '#6366f1', label: 'Gewicht (kg)' },
-    { id: 'chartFatPct',   key: 'fat_pct'     as keyof Row, color: '#f43f5e', label: 'Vet (%)' },
-    { id: 'chartFatKg',    key: 'fat_kg'      as keyof Row, color: '#f97316', label: 'Vet (kg)' },
-    { id: 'chartVvm',      key: 'vvm'         as keyof Row, color: '#22c55e', label: 'VVM (kg)' },
-    { id: 'chartWaterPct', key: 'water_pct'   as keyof Row, color: '#0ea5e9', label: 'Vocht (%)' },
-    { id: 'chartWaterKg',  key: 'water_kg'    as keyof Row, color: '#06b6d4', label: 'Vocht (kg)' },
-    { id: 'chartVisceral', key: 'visceral_fat'as keyof Row, color: '#a855f7', label: 'Visceraal vet' },
-  ];
-
   function fmtDate(d: string) {
     const [y, m, day] = d.split('-');
     return `${day}/${m}/${y}`;
@@ -356,111 +320,50 @@ const jsonData = JSON.stringify(measurements);
     return v != null ? v.toFixed(dec) : null;
   }
 
-  function buildChart(canvasId: string, labels: string[], values: (number | null)[], color: string, label: string) {
-    const canvas = document.getElementById(canvasId) as HTMLCanvasElement | null;
-    if (!canvas) return;
+  function cell(v: number | null, dec = 1) {
+    const val = fmt(v, dec);
+    return val != null
+      ? `<td>${val}</td>`
+      : `<td class="null-val">—</td>`;
+  }
 
-    if (chartInstances[canvasId]) {
-      chartInstances[canvasId].data.labels = labels;
-      (chartInstances[canvasId].data.datasets[0] as any).data = values;
-      chartInstances[canvasId].update();
-      return;
-    }
+  function renderTable(data: Row[]) {
+    const tbody = document.getElementById('tableBody')!;
+    const sorted = [...data].sort((a, b) => b.date.localeCompare(a.date));
+    tbody.innerHTML = sorted.map(r => `
+      <tr>
+        <td>${fmtDate(r.date)}</td>
+        ${cell(r.weight)}
+        ${cell(r.fat_pct)}
+        ${cell(r.fat_kg)}
+        ${cell(r.vvm)}
+        ${cell(r.water_kg)}
+        ${cell(r.water_pct)}
+        ${cell(r.visceral_fat, 0)}
+        <td><button class="delete-btn" data-id="${r.id}" title="Verwijderen">✕</button></td>
+      </tr>
+    `).join('');
 
-    chartInstances[canvasId] = new Chart(canvas, {
-      type: 'line',
-      data: {
-        labels,
-        datasets: [{
-          label,
-          data: values,
-          borderColor: color,
-          backgroundColor: color + '18',
-          fill: true,
-          tension: 0.35,
-          pointRadius: 4,
-          pointHoverRadius: 6,
-          pointBackgroundColor: color,
-          borderWidth: 2,
-          spanGaps: true,
-        }],
-      },
-      options: {
-        responsive: true,
-        plugins: {
-          legend: { display: false },
-          tooltip: {
-            backgroundColor: '#ffffff',
-            borderColor: '#e2e8f0',
-            borderWidth: 1,
-            titleColor: '#1e293b',
-            bodyColor: '#64748b',
-            padding: 10,
-          },
-        },
-        scales: {
-          x: {
-            ticks: { color: '#94a3b8', font: { size: 11 } },
-            grid: { color: '#f1f5f9' },
-          },
-          y: {
-            ticks: { color: '#94a3b8', font: { size: 11 } },
-            grid: { color: '#f1f5f9' },
-          },
-        },
-      },
+    tbody.querySelectorAll<HTMLButtonElement>('.delete-btn').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        if (!confirm('Meting verwijderen?')) return;
+        const res = await fetch(`/api/measurements/${btn.dataset.id}`, { method: 'POST' });
+        if (res.ok) {
+          window.location.reload();
+        } else {
+          alert(`Verwijderen mislukt (${res.status})`);
+        }
+      });
     });
   }
 
-  function renderCharts(data: Row[]) {
-    const labels = data.map(r => fmtDate(r.date));
-    for (const def of CHART_DEFS) {
-      buildChart(def.id, labels, data.map(r => r[def.key] as number | null), def.color, def.label);
-    }
-  }
-
-  function renderStats(data: Row[]) {
-    const bar = document.getElementById('statsBar')!;
-    if (!data.length) { bar.innerHTML = ''; return; }
-
-    const last  = data[data.length - 1];
-    const first = data.length > 1 ? data[0] : null;
-
-    const d = <T extends number>(a: T | null, b: T | null) =>
-      a != null && b != null ? a - b : null;
-
-    const items = [
-      { label: 'Huidig gewicht', value: (fmt(last.weight)      ?? '—') + ' kg', delta: d(last.weight,       first?.weight       ?? null) },
-      { label: 'Vet (kg)',       value: (fmt(last.fat_kg)      ?? '—') + ' kg', delta: d(last.fat_kg,       first?.fat_kg       ?? null) },
-      { label: 'Vet (%)',        value: (fmt(last.fat_pct)     ?? '—') + ' %',  delta: d(last.fat_pct,      first?.fat_pct      ?? null) },
-      { label: 'VVM',            value: (fmt(last.vvm)         ?? '—') + ' kg', delta: d(last.vvm,          first?.vvm          ?? null) },
-      { label: 'Vocht (kg)',     value: (fmt(last.water_kg)    ?? '—') + ' kg', delta: null },
-      { label: 'Visceraal vet',  value:  fmt(last.visceral_fat, 0) ?? '—',      delta: d(last.visceral_fat, first?.visceral_fat ?? null) },
-    ];
-
-    bar.innerHTML = items.map(({ label, value, delta }) => {
-      let deltaHtml = '';
-      if (delta != null) {
-        const cls = delta < 0 ? 'neg' : delta > 0 ? 'pos' : 'neutral';
-        deltaHtml = `<span class="delta ${cls}">${delta > 0 ? '+' : ''}${delta.toFixed(1)}</span>`;
-      }
-      return `<div class="stat-card"><div class="stat-label">${label}</div><div class="stat-value">${value}${deltaHtml}</div></div>`;
-    }).join('');
-  }
-
-  function showDashboard(data: Row[]) {
-    renderStats(data);
-    renderCharts(data);
-  }
-
-  // Initial render
-  if (initialData.length > 0) showDashboard(initialData);
+  if (initialData.length > 0) renderTable(initialData);
 
   // Form toggle
-  const formPanel  = document.getElementById('formPanel')!;
-  const toggleBtn  = document.getElementById('toggleForm')!;
-  const cancelBtn  = document.getElementById('cancelForm')!;
-  const emptyBtn   = document.getElementById('emptyAddBtn')!;
+  const formPanel = document.getElementById('formPanel')!;
+  const toggleBtn = document.getElementById('toggleForm')!;
+  const cancelBtn = document.getElementById('cancelForm')!;
+  const emptyBtn  = document.getElementById('emptyAddBtn')!;
 
   function openForm() {
     formPanel.classList.remove('hidden');
