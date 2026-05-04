@@ -34,7 +34,7 @@ const jsonData = JSON.stringify(measurements);
     <!-- Form panel -->
     <div id="formPanel" class="form-panel hidden">
       <div class="form-card">
-        <h2>Nieuwe meting</h2>
+        <h2 id="formTitle">Nieuwe meting</h2>
         <form id="measurementForm">
           <div class="form-grid">
             <div class="field">
@@ -295,9 +295,17 @@ const jsonData = JSON.stringify(measurements);
 
   #dataTable th:last-child,
   #dataTable td:last-child {
-    width: 48px;
+    width: 80px;
     padding: 0 12px;
     text-align: center;
+  }
+
+  .row-actions {
+    display: flex;
+    gap: 4px;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
   }
 
   #dataTable td {
@@ -315,7 +323,8 @@ const jsonData = JSON.stringify(measurements);
 
   #dataTable td.null-val { color: #c8d0db; font-size: .8rem; }
 
-  .delete-btn {
+  .delete-btn,
+  .edit-btn {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -333,6 +342,11 @@ const jsonData = JSON.stringify(measurements);
     color: var(--accent2);
     background: rgba(239,68,68,.07);
     border-color: rgba(239,68,68,.2);
+  }
+  .edit-btn:hover {
+    color: var(--accent);
+    background: rgba(99,102,241,.07);
+    border-color: rgba(99,102,241,.2);
   }
 </style>
 
@@ -389,9 +403,19 @@ const jsonData = JSON.stringify(measurements);
         ${cell(r.water_kg)}
         ${cell(r.water_pct)}
         ${cell(r.visceral_fat, 0)}
-        <td><button class="delete-btn" data-id="${r.id}" title="Verwijderen">✕</button></td>
+        <td><div class="row-actions">
+          <button class="edit-btn" data-id="${r.id}" title="Bewerken">✎</button>
+          <button class="delete-btn" data-id="${r.id}" title="Verwijderen">✕</button>
+        </div></td>
       </tr>
     `).join('');
+
+    tbody.querySelectorAll<HTMLButtonElement>('.edit-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const row = sortedData.find(r => r.id === btn.dataset.id);
+        if (row) openFormForEdit(row);
+      });
+    });
 
     tbody.querySelectorAll<HTMLButtonElement>('.delete-btn').forEach(btn => {
       btn.addEventListener('click', async () => {
@@ -438,21 +462,54 @@ const jsonData = JSON.stringify(measurements);
   if (initialData.length > 0) renderTable(initialData);
 
   // Form toggle
-  const formPanel = document.getElementById('formPanel')!;
-  const toggleBtn = document.getElementById('toggleForm')!;
-  const cancelBtn = document.getElementById('cancelForm')!;
-  const emptyBtn  = document.getElementById('emptyAddBtn')!;
+  const formPanel  = document.getElementById('formPanel')!;
+  const formTitle  = document.getElementById('formTitle')!;
+  const toggleBtn  = document.getElementById('toggleForm')!;
+  const cancelBtn  = document.getElementById('cancelForm')!;
+  const emptyBtn   = document.getElementById('emptyAddBtn')!;
+  const form       = document.getElementById('measurementForm') as HTMLFormElement;
+  const submitBtn  = document.getElementById('submitBtn') as HTMLButtonElement;
+
+  let editingId: string | null = null;
+
+  function setField(id: string, value: number | null) {
+    const el = document.getElementById(id) as HTMLInputElement;
+    el.value = value != null ? String(value) : '';
+  }
 
   function openForm() {
+    editingId = null;
+    formTitle.textContent = 'Nieuwe meting';
+    submitBtn.textContent = 'Opslaan';
+    form.reset();
     formPanel.classList.remove('hidden');
     toggleBtn.textContent = '✕ Sluiten';
     const dateInput = document.getElementById('date') as HTMLInputElement;
     if (!dateInput.value) dateInput.value = new Date().toISOString().split('T')[0];
   }
 
+  function openFormForEdit(row: Row) {
+    editingId = row.id;
+    formTitle.textContent = 'Meting bewerken';
+    submitBtn.textContent = 'Wijzigingen opslaan';
+    (document.getElementById('date') as HTMLInputElement).value = row.date;
+    setField('weight', row.weight);
+    setField('fatPct', row.fat_pct);
+    setField('fatKg', row.fat_kg);
+    setField('vvm', row.vvm);
+    setField('waterKg', row.water_kg);
+    setField('waterPct', row.water_pct);
+    setField('visceralFat', row.visceral_fat);
+    formPanel.classList.remove('hidden');
+    toggleBtn.textContent = '✕ Sluiten';
+    formPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
   function closeForm() {
+    editingId = null;
     formPanel.classList.add('hidden');
     toggleBtn.textContent = '+ Meting toevoegen';
+    form.reset();
   }
 
   toggleBtn.addEventListener('click', () =>
@@ -462,9 +519,6 @@ const jsonData = JSON.stringify(measurements);
   emptyBtn?.addEventListener('click', openForm);
 
   // Form submit
-  const form      = document.getElementById('measurementForm') as HTMLFormElement;
-  const submitBtn = document.getElementById('submitBtn') as HTMLButtonElement;
-
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
     submitBtn.disabled = true;
@@ -473,20 +527,30 @@ const jsonData = JSON.stringify(measurements);
     const fd = new FormData(form);
     const num = (k: string) => { const v = fd.get(k); return v !== '' && v != null ? parseFloat(v as string) : null; };
 
-    await fetch('/api/measurements', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        date:        fd.get('date'),
-        weight:      num('weight'),
-        fatPct:      num('fatPct'),
-        fatKg:       num('fatKg'),
-        vvm:         num('vvm'),
-        waterKg:     num('waterKg'),
-        waterPct:    num('waterPct'),
-        visceralFat: num('visceralFat'),
-      }),
-    });
+    const payload = {
+      date:        fd.get('date'),
+      weight:      num('weight'),
+      fatPct:      num('fatPct'),
+      fatKg:       num('fatKg'),
+      vvm:         num('vvm'),
+      waterKg:     num('waterKg'),
+      waterPct:    num('waterPct'),
+      visceralFat: num('visceralFat'),
+    };
+
+    if (editingId) {
+      await fetch(`/api/measurements/${editingId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+    } else {
+      await fetch('/api/measurements', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+    }
 
     window.location.reload();
   });
