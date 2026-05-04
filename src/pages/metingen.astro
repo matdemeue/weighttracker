@@ -106,6 +106,11 @@ const jsonData = JSON.stringify(measurements);
           <tbody id="tableBody"></tbody>
         </table>
       </div>
+      <div id="pagination" class="pagination hidden">
+        <button id="prevPage" class="page-btn" disabled>‹ Vorige</button>
+        <span id="pageInfo" class="page-info"></span>
+        <button id="nextPage" class="page-btn">Volgende ›</button>
+      </div>
     </div>
   </div>
 </Layout>
@@ -216,6 +221,36 @@ const jsonData = JSON.stringify(measurements);
     box-shadow: 0 1px 3px rgba(0,0,0,.05);
   }
 
+  .pagination {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    padding: 16px 0 4px;
+  }
+  .pagination.hidden { display: none; }
+
+  .page-btn {
+    background: var(--surface);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 7px 16px;
+    font-size: .85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background .12s, border-color .12s;
+  }
+  .page-btn:hover:not(:disabled) { background: var(--surface2); border-color: var(--accent); }
+  .page-btn:disabled { opacity: .4; cursor: not-allowed; }
+
+  .page-info {
+    font-size: .85rem;
+    color: var(--muted);
+    min-width: 100px;
+    text-align: center;
+  }
+
   @media (max-width: 640px) {
     .form-card { padding: 20px 16px; }
     .form-grid { grid-template-columns: 1fr 1fr; }
@@ -318,6 +353,10 @@ const jsonData = JSON.stringify(measurements);
     document.getElementById('__data')!.textContent!
   );
 
+  const PAGE_SIZE = 20;
+  let currentPage = 1;
+  let sortedData: Row[] = [];
+
   function fmtDate(d: string) {
     const [y, m, day] = d.split('-');
     return `${day}/${m}/${y}`;
@@ -334,10 +373,13 @@ const jsonData = JSON.stringify(measurements);
       : `<td class="null-val">—</td>`;
   }
 
-  function renderTable(data: Row[]) {
+  function renderPage() {
     const tbody = document.getElementById('tableBody')!;
-    const sorted = [...data].sort((a, b) => b.date.localeCompare(a.date));
-    tbody.innerHTML = sorted.map(r => `
+    const totalPages = Math.ceil(sortedData.length / PAGE_SIZE);
+    const start = (currentPage - 1) * PAGE_SIZE;
+    const pageRows = sortedData.slice(start, start + PAGE_SIZE);
+
+    tbody.innerHTML = pageRows.map(r => `
       <tr>
         <td>${fmtDate(r.date)}</td>
         ${cell(r.weight)}
@@ -362,7 +404,36 @@ const jsonData = JSON.stringify(measurements);
         }
       });
     });
+
+    const pagination = document.getElementById('pagination')!;
+    const prevBtn = document.getElementById('prevPage') as HTMLButtonElement;
+    const nextBtn = document.getElementById('nextPage') as HTMLButtonElement;
+    const pageInfo = document.getElementById('pageInfo')!;
+
+    if (totalPages > 1) {
+      pagination.classList.remove('hidden');
+      prevBtn.disabled = currentPage === 1;
+      nextBtn.disabled = currentPage === totalPages;
+      pageInfo.textContent = `Pagina ${currentPage} / ${totalPages}`;
+    } else {
+      pagination.classList.add('hidden');
+    }
   }
+
+  function renderTable(data: Row[]) {
+    sortedData = [...data].sort((a, b) => b.date.localeCompare(a.date));
+    currentPage = 1;
+    renderPage();
+  }
+
+  document.getElementById('prevPage')!.addEventListener('click', () => {
+    if (currentPage > 1) { currentPage--; renderPage(); }
+  });
+
+  document.getElementById('nextPage')!.addEventListener('click', () => {
+    const totalPages = Math.ceil(sortedData.length / PAGE_SIZE);
+    if (currentPage < totalPages) { currentPage++; renderPage(); }
+  });
 
   if (initialData.length > 0) renderTable(initialData);
 
