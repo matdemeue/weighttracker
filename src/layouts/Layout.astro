@@ -22,7 +22,17 @@ const path = Astro.url.pathname;
           <a href="/" class:list={['nav-link', { active: path === '/' }]}>Grafieken</a>
           <a href="/metingen" class:list={['nav-link', { active: path === '/metingen' }]}>Metingen</a>
         </div>
-        <form method="POST" action="/api/auth/logout" style="margin-left:auto">
+        <form method="POST" action="/api/auth/logout" class="logout-form">
+          <button type="submit" class="logout-btn">Uitloggen</button>
+        </form>
+        <button class="hamburger" id="hamburger" aria-label="Menu openen" aria-expanded="false">
+          <span></span><span></span><span></span>
+        </button>
+      </div>
+      <div class="mobile-menu" id="mobileMenu" aria-hidden="true">
+        <a href="/" class:list={['mobile-link', { active: path === '/' }]}>Grafieken</a>
+        <a href="/metingen" class:list={['mobile-link', { active: path === '/metingen' }]}>Metingen</a>
+        <form method="POST" action="/api/auth/logout" class="mobile-logout">
           <button type="submit" class="logout-btn">Uitloggen</button>
         </form>
       </div>
@@ -76,6 +86,8 @@ const path = Astro.url.pathname;
     height: 52px;
   }
 
+  .logout-form { margin-left: auto; }
+
   .nav-brand {
     font-size: 1rem;
     font-weight: 700;
@@ -112,4 +124,80 @@ const path = Astro.url.pathname;
     transition: color .15s, border-color .15s;
   }
   .logout-btn:hover { color: var(--text); border-color: var(--muted); }
+
+  .hamburger {
+    display: none;
+    flex-direction: column;
+    justify-content: center;
+    gap: 5px;
+    width: 36px;
+    height: 36px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 4px;
+    margin-left: auto;
+    border-radius: 8px;
+    transition: background .15s;
+  }
+  .hamburger:hover { background: var(--bg); }
+  .hamburger span {
+    display: block;
+    height: 2px;
+    background: var(--text);
+    border-radius: 2px;
+    transition: transform .2s, opacity .2s;
+  }
+  .hamburger.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+  .hamburger.open span:nth-child(2) { opacity: 0; }
+  .hamburger.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+  .mobile-menu {
+    display: none;
+    flex-direction: column;
+    border-top: 1px solid var(--border);
+    background: var(--surface);
+    padding: 8px 0 12px;
+  }
+  .mobile-menu.open { display: flex; }
+
+  .mobile-link {
+    padding: 12px 20px;
+    font-size: .95rem;
+    font-weight: 600;
+    color: var(--muted);
+    text-decoration: none;
+    transition: color .15s, background .15s;
+  }
+  .mobile-link:hover { color: var(--text); background: var(--bg); }
+  .mobile-link.active { color: var(--accent); }
+
+  .mobile-logout {
+    padding: 8px 20px 0;
+  }
+  .mobile-logout .logout-btn {
+    width: 100%;
+    padding: 10px;
+    font-size: .9rem;
+    text-align: center;
+  }
+
+  @media (max-width: 600px) {
+    .nav-links,
+    .logout-form { display: none; }
+    .hamburger { display: flex; }
+  }
 </style>
+
+<script>
+  const hamburger = document.getElementById('hamburger');
+  const mobileMenu = document.getElementById('mobileMenu');
+  if (hamburger && mobileMenu) {
+    hamburger.addEventListener('click', () => {
+      const isOpen = mobileMenu.classList.toggle('open');
+      hamburger.classList.toggle('open', isOpen);
+      hamburger.setAttribute('aria-expanded', String(isOpen));
+      mobileMenu.setAttribute('aria-hidden', String(!isOpen));
+    });
+  }
+</script>
