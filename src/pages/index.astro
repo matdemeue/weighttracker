@@ -1,23 +1,8 @@
 ---
 import Layout from '../layouts/Layout.astro';
-import { db } from '../lib/db';
+import { getAllMeasurements } from '../lib/airtable';
 
-interface Row {
-  id: string;
-  date: string;
-  weight: number | null;
-  fat_pct: number | null;
-  fat_kg: number | null;
-  vvm: number | null;
-  water_kg: number | null;
-  water_pct: number | null;
-  visceral_fat: number | null;
-}
-
-const measurements = db
-  .prepare('SELECT * FROM measurements ORDER BY date ASC')
-  .all() as Row[];
-
+const measurements = await getAllMeasurements();
 const jsonData = JSON.stringify(measurements);
 ---
 

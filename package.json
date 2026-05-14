@@ -13,11 +13,8 @@
   },
   "dependencies": {
     "@astrojs/node": "^10.0.6",
+    "airtable": "^0.12.2",
     "astro": "^6.2.1",
-    "better-sqlite3": "^12.9.0",
     "chart.js": "^4.5.1"
-  },
-  "devDependencies": {
-    "@types/better-sqlite3": "^7.6.13"
   }
 }
